@@ -1,0 +1,76 @@
+name: Release application
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: pingpong-cluster
+  GKE_ZONE: us-central1-a
+  IMAGE_PING: gcr.io/${{ secrets.GKE_PROJECT }}/pingpong
+  IMAGE_LOG:  gcr.io/${{ secrets.GKE_PROJECT }}/log-output
+  BRANCH:      ${{ github.ref_name }}
+
+jobs:
+  build-publish-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # 3.1 Check out code
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 3.2 Authenticate to GCP
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GKE_SA_KEY }}'
+
+      # 3.3 Install gcloud
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      # 3.4 Configure Docker for GCR
+      - name: Configure Docker
+        run: gcloud --quiet auth configure-docker
+
+      # 3.5 Build & push pingpong
+      - name: Build pingpong image
+        run: |
+          docker build -t $IMAGE_PING:$BRANCH-$GITHUB_SHA pingpong
+          docker push $IMAGE_PING:$BRANCH-$GITHUB_SHA
+
+      # 3.6 Build & push log-output
+      - name: Build log-output image
+        run: |
+          docker build -t $IMAGE_LOG:$BRANCH-$GITHUB_SHA log-output
+          docker push $IMAGE_LOG:$BRANCH-$GITHUB_SHA
+
+      # 3.7 Get GKE credentials
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location:     ${{ env.GKE_ZONE }}
+          project_id:   ${{ env.PROJECT_ID }}
+
+      # 3.8 Deploy pingpong
+      - name: Deploy pingpong
+        run: |
+          kubectl set image deployment/pingpong-deployment \
+            pingpong=$IMAGE_PING:$BRANCH-$GITHUB_SHA \
+            -n my-project
+
+      # 3.9 Deploy log-output
+      - name: Deploy log-output
+        run: |
+          kubectl set image deployment/log-output \
+            log-output=$IMAGE_LOG:$BRANCH-$GITHUB_SHA \
+            -n my-project
+
+      # 3.10 Verify rollout
+      - name: Verify deployments
+        run: |
+          kubectl rollout status deployment/pingpong-deployment -n my-project
+          kubectl rollout status deployment/log-output     -n my-project

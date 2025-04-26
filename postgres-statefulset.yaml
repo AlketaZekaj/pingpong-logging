@@ -6,8 +6,10 @@ metadata:
 spec:
   serviceName: postgres
   replicas: 1
+
   updateStrategy:               
     type: OnDelete
+
   selector:
     matchLabels:
       app: postgres

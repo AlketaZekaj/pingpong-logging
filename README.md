@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 ### EXERCISE 3.01
 
 The requirement for this exercise was todeploy the Ping-pong application (backed by Postgres) into a GKE cluster and expose it directly via a Service of type LoadBalancer
@@ -51,3 +52,6 @@ If we go inside pingpong deployment
 
 And in log-output
 ![alt text](image-10.png)
+=======
+# Github_Actions
+>>>>>>> 40ebbdf7cb8a05c46c120b1ff775c4eebdaa6dcb

@@ -9,9 +9,10 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_CLUSTER: pingpong-cluster
   GKE_ZONE: us-central1-a
-  IMAGE_PING: gcr.io/${{ secrets.GKE_PROJECT }}/pingpong
-  IMAGE_LOG:  gcr.io/${{ secrets.GKE_PROJECT }}/log-output
+  IMAGE_PING: docker.pkg.dev/${{ secrets.GKE_PROJECT }}/pingpong-logging/pingpong
+  IMAGE_LOG:  docker.pkg.dev/${{ secrets.GKE_PROJECT }}/pingpong-logging/log-output
   BRANCH:      ${{ github.ref_name }}
+
 
 jobs:
   build-publish-deploy:

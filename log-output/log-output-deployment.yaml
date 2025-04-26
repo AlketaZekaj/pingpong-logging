@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: log-output
+  namespace: my-project
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: log-output
+  template:
+    metadata:
+      labels:
+        app: log-output
+    spec:
+      containers:
+        - name: log-output
+          image: alketaz/log-output:latest
+          env:
+            - name: MESSAGE
+              value: "Hello from GKE!"
+            - name: PINGPONG_URL
+              value: http://pingpong-service:5000/pingpong
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: "/"
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/"
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          configMap:
+            name: log-output-config

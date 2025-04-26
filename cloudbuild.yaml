@@ -1,0 +1,39 @@
+steps:
+- name: "gcr.io/cloud-builders/docker"
+  args: ["build", "-t", "gcr.io/$PROJECT_ID/pingpong:$SHORT_SHA", "."]
+  dir: "pingpong"
+- name: "gcr.io/cloud-builders/docker"
+  args: ["push", "gcr.io/$PROJECT_ID/pingpong:$SHORT_SHA"]
+
+- name: "gcr.io/cloud-builders/docker"
+  args: ["build", "-t", "gcr.io/$PROJECT_ID/log-output:$SHORT_SHA", "."]
+  dir: "log-output"
+- name: "gcr.io/cloud-builders/docker"
+  args: ["push", "gcr.io/$PROJECT_ID/log-output:$SHORT_SHA"]
+
+ 
+- name: "gcr.io/cloud-builders/gcloud"
+  args:
+    [
+      "container", "clusters", "get-credentials", "pingpong-cluster",
+      "--zone=us-central1-a", "--project=$PROJECT_ID"
+    ]
+
+- name: "gcr.io/cloud-builders/kubectl"
+  args:
+    [
+      "set", "image", "deployment/pingpong-deployment",
+      "pingpong=gcr.io/$PROJECT_ID/pingpong:$SHORT_SHA",
+      "-n", "my-project"
+    ]
+- name: "gcr.io/cloud-builders/kubectl"
+  args:
+    [
+      "set", "image", "deployment/log-output",
+      "log-output=gcr.io/$PROJECT_ID/log-output:$SHORT_SHA",
+      "-n", "my-project"
+    ]
+
+images:
+  - "gcr.io/$PROJECT_ID/pingpong:$SHORT_SHA"
+  - "gcr.io/$PROJECT_ID/log-output:$SHORT_SHA"

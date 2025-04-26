@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pingpong-deployment
+  namespace: my-project
+spec:
+  strategy:
+    type: Recreate           
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pingpong
+  template:
+    metadata:
+      labels:
+        app: pingpong
+    spec:
+      containers:
+        - name: pingpong
+          image: alketaz/pingpong:latest
+          ports:
+            - containerPort: 5000
+          env:
+            - name: DATABASE_URL
+              value: postgresql://pinguser:pingpass@postgres:5432/pingdb
+          readinessProbe:
+            httpGet:
+              path: "/"
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: "/"
+              port: 5000
+            initialDelaySeconds: 15
+            periodSeconds: 20

@@ -1,0 +1,52 @@
+name: Delete environment
+
+on:
+  delete:
+    branches:
+      - '**'   
+
+env:
+  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+  GKE_CLUSTER: pingpong-cluster
+  GKE_ZONE: us-central1-a
+  BRANCH: ${{ github.event.ref }}
+
+jobs:
+  delete-environment:
+    name: Delete Kubernetes Environment
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: '${{ secrets.GKE_SA_KEY }}'
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: '${{ env.GKE_CLUSTER }}'
+          project_id: '${{ env.PROJECT_ID }}'
+          location: '${{ env.GKE_ZONE }}'
+
+      - name: Determine Namespace
+        id: set-namespace
+        run: |
+          if [[ "${{ env.BRANCH }}" == "main" ]]; then
+            echo "Namespace is default, not deleting."
+            echo "skip=true" >> $GITHUB_ENV
+          else
+            # Make a namespace name like "my-project-branchname"
+            safe_branch=$(echo "${{ env.BRANCH }}" | sed 's/refs\/heads\///')
+            echo "namespace=my-project-$safe_branch" >> $GITHUB_ENV
+            echo "skip=false" >> $GITHUB_ENV
+          fi
+
+      - name: Delete Namespace
+        if: env.skip != 'true'
+        run: |
+          echo "Deleting namespace ${{ env.namespace }}"
+          kubectl delete namespace ${{ env.namespace }} --ignore-not-found=true

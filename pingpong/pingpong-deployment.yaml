@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: pingpong
-          image: alketaz/pingpong:latest
+          image: us-central1-docker.pkg.dev/pingpong-logging/pingpong-logging/pingpong:latest
           ports:
             - containerPort: 5000
           env:

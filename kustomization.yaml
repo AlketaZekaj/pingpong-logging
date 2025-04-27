@@ -14,6 +14,9 @@ resources:
   - ingress.yaml
 
 images:
-  - name: PROJECT/IMAGE
-    newName: gcr.io/pingpong-logging/pingpong-logging-app
+  - name: alketaz/pingpong
+    newName: us-central1-docker.pkg.dev/pingpong-logging/pingpong-logging/pingpong
+    newTag: latest
+  - name: alketaz/log-output
+    newName: us-central1-docker.pkg.dev/pingpong-logging/pingpong-logging/log-output
     newTag: latest

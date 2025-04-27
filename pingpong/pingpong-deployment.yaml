@@ -5,8 +5,7 @@ metadata:
   namespace: my-project
 spec:
   strategy:
-    type: Recreate           
-
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:
@@ -23,10 +22,7 @@ spec:
             - containerPort: 5000
           env:
             - name: DATABASE_URL
-
               value: postgresql://pinguser:pingpass@postgres:5432/pingdb
-
-              value: postgres://pinguser:pingpass@postgres:5432/pingdb
           readinessProbe:
             httpGet:
               path: "/"
@@ -39,5 +35,3 @@ spec:
               port: 5000
             initialDelaySeconds: 15
             periodSeconds: 20
-            periodSeconds: 20
- 

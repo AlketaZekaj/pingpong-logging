@@ -57,6 +57,6 @@ jobs:
       - name: Deploy to GKE
         run: |
           kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment pingpong-deployment
-          kubectl rollout status deployment log-output
-          kubectl get services -o wide
+          kubectl rollout status deployment pingpong-deployment -n my-project
+          kubectl rollout status deployment log-output -n my-project
+          kubectl get services -n my-project -o wide

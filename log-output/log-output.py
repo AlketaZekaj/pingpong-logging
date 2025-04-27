@@ -12,9 +12,7 @@ log_output = ""
 # Config and env
 INFO_FILE_PATH = "/config/information.txt"
 MESSAGE = os.getenv("MESSAGE", "No message set")
-PINGPONG_URL = os.getenv(
-    "PINGPONG_URL", "http://pingpong-service:5000/pingpong"
-)
+PINGPONG_URL = os.getenv("PINGPONG_URL", "http://pingpong-service:5000/pingpong")
 
 # Background thread to generate log lines
 def generate_logs():
@@ -46,10 +44,10 @@ def generate_logs():
 def health():
     return "OK", 200
 
-@app.route('/status')
+@app.route("/status")
 def status():
     return jsonify({"output": log_output})
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     threading.Thread(target=generate_logs, daemon=True).start()
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)

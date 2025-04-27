@@ -15,20 +15,19 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - uses: google-github-actions/auth@v2
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: '${{ secrets.GKE_SA_KEY }}'
 
-      - name: Set up Cloud SDK
+      - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      - name: Use gcloud CLI
-        run: gcloud info
-
-      - run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
+      - name: Configure Docker to use Artifact Registry
+        run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
@@ -37,14 +36,13 @@ jobs:
           project_id: '${{ env.PROJECT_ID }}'
           location: '${{ env.GKE_ZONE }}'
 
-      # --- Build and Push pingpong ---
+      # Build and Push Images
       - name: Build pingpong Docker image
         run: docker build -t "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/pingpong:$BRANCH-$GITHUB_SHA" ./pingpong
 
       - name: Push pingpong Docker image
         run: docker push "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/pingpong:$BRANCH-$GITHUB_SHA"
 
-      # --- Build and Push log-output ---
       - name: Build log-output Docker image
         run: docker build -t "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/log-output:$BRANCH-$GITHUB_SHA" ./log-output
 
@@ -54,6 +52,7 @@ jobs:
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2.1.0
 
+      # Deploy to GKE
       - name: Deploy to GKE
         run: |
           kustomize build . | kubectl apply -f -
@@ -61,7 +60,7 @@ jobs:
           kubectl rollout status deployment log-output -n my-project --timeout=300s
           kubectl get services -n my-project -o wide
 
-      # --- Update deployments to use the new images ---
+      # Update deployments with new images
       - name: Update image for pingpong
         run: |
           kubectl set image deployment/pingpong-deployment pingpong=us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/pingpong:$BRANCH-$GITHUB_SHA -n my-project

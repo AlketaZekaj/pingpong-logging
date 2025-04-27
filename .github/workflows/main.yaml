@@ -52,21 +52,16 @@ jobs:
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2.1.0
 
-      # Deploy to GKE
       - name: Deploy to GKE
         run: |
           kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment pingpong-deployment -n my-project --timeout=300s
-          kubectl rollout status deployment log-output -n my-project --timeout=300s
-          kubectl get services -n my-project -o wide
-
-      # Update deployments with new images
-      - name: Update image for pingpong
-        run: |
+          
+          # Update deployments to use new images
           kubectl set image deployment/pingpong-deployment pingpong=us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/pingpong:$BRANCH-$GITHUB_SHA -n my-project
-          kubectl rollout status deployment pingpong-deployment -n my-project --timeout=300s
-
-      - name: Update image for log-output
-        run: |
           kubectl set image deployment/log-output log-output=us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/log-output:$BRANCH-$GITHUB_SHA -n my-project
+          
+          # Now rollout and wait
+          kubectl rollout status deployment pingpong-deployment -n my-project --timeout=300s
           kubectl rollout status deployment log-output -n my-project --timeout=300s
+          
+          kubectl get services -n my-project -o wide

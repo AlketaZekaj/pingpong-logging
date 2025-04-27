@@ -9,6 +9,13 @@ spec:
     - host: todo.local  
       http:
         paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: log-output-service
+                port:
+                  number: 5000
           - path: /pingpong
             pathType: Prefix
             backend:

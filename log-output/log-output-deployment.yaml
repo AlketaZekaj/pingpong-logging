@@ -5,7 +5,10 @@ metadata:
   namespace: my-project
 spec:
   strategy:
-    type: Recreate
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
   replicas: 1
   selector:
     matchLabels:
@@ -17,7 +20,7 @@ spec:
     spec:
       containers:
         - name: log-output
-          image: alketaz/log-output:latest
+          image: us-central1-docker.pkg.dev/pingpong-logging/pingpong-logging/log-output:latest
           env:
             - name: MESSAGE
               value: "Hello from GKE!"

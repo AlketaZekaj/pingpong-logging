@@ -6,32 +6,21 @@ on:
     branches:
       - main
 
-env:
-  # these two must be set as encrypted repo secrets
-  PROJECT_ID: ${{ secrets.GKE_PROJECT }}
-  GKE_SA_KEY:  ${{ secrets.GKE_SA_KEY }}
-
-  # your cluster info
-  GKE_CLUSTER: pingpong-cluster
-  GKE_ZONE:    us-central1-a
-  REGION:      us-central1
-
-  # Artifact Registry repos & image names
-  REPO_PING: pingpong
-  REPO_LOG:  log-output
-
-  IMAGE_PING: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_PING }}/${{ env.REPO_PING }}
-  IMAGE_LOG:  ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_LOG }}/${{ env.REPO_LOG }}
-
-  BRANCH:      ${{ github.ref_name }}
-
 jobs:
   build-publish-deploy:
-    name: Build, Publish & Deploy
     runs-on: ubuntu-latest
 
+    # these come from your GitHub Secrets
+    env:
+      PROJECT_ID: ${{ secrets.GKE_PROJECT }}
+      REGION: us-central1
+      GKE_CLUSTER: pingpong-cluster
+      GKE_ZONE: us-central1-a
+      REPO_PING: pingpong
+      REPO_LOG: log-output
+
     steps:
-      # 1️⃣ Check out code
+      # 1️⃣ Checkout your code
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -39,29 +28,34 @@ jobs:
       - name: Authenticate to Google Cloud
         uses: google-github-actions/auth@v2
         with:
-          credentials_json: ${{ env.GKE_SA_KEY }}
+          credentials_json: ${{ secrets.GKE_SA_KEY }}
 
-      # 3️⃣ Install gcloud
+      # 3️⃣ Install the Cloud SDK
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v2
 
-      # 4️⃣ Enable Docker ↔ Artifact Registry
-      - name: Configure Docker
-        run: gcloud --quiet auth configure-docker ${{ env.REGION }}-docker.pkg.dev
+      # 4️⃣ Configure Docker → Artifact Registry
+      - name: Configure Docker for Artifact Registry
+        run: |
+          gcloud --quiet auth configure-docker $REGION-docker.pkg.dev
 
-      # 5️⃣ Build & push pingpong
+      # 5️⃣ Build & push pingpong image
       - name: Build & Publish pingpong
         run: |
-          docker build -t $IMAGE_PING:$BRANCH-$GITHUB_SHA pingpong
-          docker push $IMAGE_PING:$BRANCH-$GITHUB_SHA
+          IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_PING/$REPO_PING:$GITHUB_REF_NAME-$GITHUB_SHA
+          echo "Building $IMAGE"
+          docker build -t "$IMAGE" pingpong
+          docker push "$IMAGE"
 
-      # 6️⃣ Build & push log-output
+      # 6️⃣ Build & push log-output image
       - name: Build & Publish log-output
         run: |
-          docker build -t $IMAGE_LOG:$BRANCH-$GITHUB_SHA log-output
-          docker push $IMAGE_LOG:$BRANCH-$GITHUB_SHA
+          IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_LOG/$REPO_LOG:$GITHUB_REF_NAME-$GITHUB_SHA
+          echo "Building $IMAGE"
+          docker build -t "$IMAGE" log-output
+          docker push "$IMAGE"
 
-      # 7️⃣ Grab GKE kubeconfig
+      # 7️⃣ Fetch GKE credentials
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
         with:
@@ -69,16 +63,18 @@ jobs:
           location:     ${{ env.GKE_ZONE }}
           project_id:   ${{ env.PROJECT_ID }}
 
-      # 8️⃣ Roll out new image to pingpong
+      # 8️⃣ Deploy pingpong
       - name: Deploy pingpong
         run: |
+          IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_PING/$REPO_PING:$GITHUB_REF_NAME-$GITHUB_SHA
           kubectl set image deployment/pingpong-deployment \
-            pingpong=$IMAGE_PING:$BRANCH-$GITHUB_SHA
+            pingpong="$IMAGE"
           kubectl rollout status deployment/pingpong-deployment
 
-      # 9️⃣ Roll out new image to log-output
+      # 9️⃣ Deploy log-output
       - name: Deploy log-output
         run: |
+          IMAGE=$REGION-docker.pkg.dev/$PROJECT_ID/$REPO_LOG/$REPO_LOG:$GITHUB_REF_NAME-$GITHUB_SHA
           kubectl set image deployment/log-output \
-            log-output=$IMAGE_LOG:$BRANCH-$GITHUB_SHA
+            log-output="$IMAGE"
           kubectl rollout status deployment/log-output

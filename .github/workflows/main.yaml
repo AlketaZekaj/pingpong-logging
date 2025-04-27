@@ -28,7 +28,7 @@ jobs:
       - name: Use gcloud CLI
         run: gcloud info
 
-      - run: gcloud --quiet auth configure-docker
+      - run: gcloud --quiet auth configure-docker us-central1-docker.pkg.dev
 
       - name: Get GKE credentials
         uses: google-github-actions/get-gke-credentials@v2
@@ -39,24 +39,23 @@ jobs:
 
       # --- Build and Push pingpong ---
       - name: Build pingpong Docker image
-        run: docker build -t "gcr.io/$PROJECT_ID/pingpong:$BRANCH-$GITHUB_SHA" ./pingpong
+        run: docker build -t "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/pingpong:$BRANCH-$GITHUB_SHA" ./pingpong
 
       - name: Push pingpong Docker image
-        run: docker push "gcr.io/$PROJECT_ID/pingpong:$BRANCH-$GITHUB_SHA"
+        run: docker push "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/pingpong:$BRANCH-$GITHUB_SHA"
 
       # --- Build and Push log-output ---
       - name: Build log-output Docker image
-        run: docker build -t "gcr.io/$PROJECT_ID/log-output:$BRANCH-$GITHUB_SHA" ./log-output
+        run: docker build -t "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/log-output:$BRANCH-$GITHUB_SHA" ./log-output
 
       - name: Push log-output Docker image
-        run: docker push "gcr.io/$PROJECT_ID/log-output:$BRANCH-$GITHUB_SHA"
+        run: docker push "us-central1-docker.pkg.dev/$PROJECT_ID/pingpong-logging/log-output:$BRANCH-$GITHUB_SHA"
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2.1.0
 
       - name: Deploy to GKE
         run: |
-          # Update kustomization.yaml dynamically if needed (optional)
           kustomize build . | kubectl apply -f -
           kubectl rollout status deployment pingpong
           kubectl rollout status deployment log-output

@@ -4,6 +4,8 @@ metadata:
   name: log-output
   namespace: my-project
 spec:
+  strategy:
+    type: Recreate
   replicas: 1
   selector:
     matchLabels:

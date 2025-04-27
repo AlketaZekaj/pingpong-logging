@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - log-output/log-output-deployment.yaml
+  - log-output/log-output-service.yaml
+  - log-output/log-output-configmap.yaml
+  - pingpong/pingpong-deployment.yaml
+  - pingpong/pingpong-service.yaml
+  - postgres-pvc.yaml
+  - postgres-secret.yaml
+  - postgres-service.yaml
+  - postgres-statefulset.yaml
+  - ingress.yaml
+
+images:
+  - name: PROJECT/IMAGE
+    newName: gcr.io/pingpong-logging/pingpong-logging-app
+    newTag: latest

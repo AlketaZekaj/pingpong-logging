@@ -7,10 +7,7 @@ env:
   PROJECT_ID: ${{ secrets.GKE_PROJECT }}
   GKE_CLUSTER: pingpong-cluster
   GKE_ZONE: us-central1-a
-  IMAGE: your-image-name
-  SERVICE: your-deployment-name
   BRANCH: ${{ github.ref_name }}
-
 
 jobs:
   build-publish-deploy:
@@ -40,18 +37,27 @@ jobs:
           project_id: '${{ env.PROJECT_ID }}'
           location: '${{ env.GKE_ZONE }}'
 
-      - name: Build Docker image
-        run: docker build --tag "gcr.io/$PROJECT_ID/$IMAGE:$BRANCH-$GITHUB_SHA" .
+      # --- Build and Push pingpong ---
+      - name: Build pingpong Docker image
+        run: docker build -t "gcr.io/$PROJECT_ID/pingpong:$BRANCH-$GITHUB_SHA" ./pingpong
 
-      - name: Push Docker image
-        run: docker push "gcr.io/$PROJECT_ID/$IMAGE:$BRANCH-$GITHUB_SHA"
+      - name: Push pingpong Docker image
+        run: docker push "gcr.io/$PROJECT_ID/pingpong:$BRANCH-$GITHUB_SHA"
+
+      # --- Build and Push log-output ---
+      - name: Build log-output Docker image
+        run: docker build -t "gcr.io/$PROJECT_ID/log-output:$BRANCH-$GITHUB_SHA" ./log-output
+
+      - name: Push log-output Docker image
+        run: docker push "gcr.io/$PROJECT_ID/log-output:$BRANCH-$GITHUB_SHA"
 
       - name: Set up Kustomize
         uses: imranismail/setup-kustomize@v2.1.0
 
       - name: Deploy to GKE
         run: |
-          kustomize edit set image PROJECT/IMAGE=gcr.io/$PROJECT_ID/$IMAGE:$BRANCH-$GITHUB_SHA
+          # Update kustomization.yaml dynamically if needed (optional)
           kustomize build . | kubectl apply -f -
-          kubectl rollout status deployment $SERVICE
+          kubectl rollout status deployment pingpong
+          kubectl rollout status deployment log-output
           kubectl get services -o wide
